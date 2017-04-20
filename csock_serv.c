@@ -6,7 +6,7 @@
 /*   By: qle-guen <qle-guen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/04/19 14:14:08 by qle-guen          #+#    #+#             */
-/*   Updated: 2017/04/19 16:26:04 by qle-guen         ###   ########.fr       */
+/*   Updated: 2017/04/20 14:14:24 by qle-guen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,11 +39,20 @@ struct sockaddr_in self_addr;
 int backlog = 10;
 pthread_t thread;
 
-/*
+
 void *client_routine(void *cli)
 {
 	cli_list *self = cli;
-	(void)self;
+	char buffer[1024];
+	int nbytes;
+
+	while (42)
+	{
+		nbytes = recv(self->fd, buffer, sizeof buffer, 0);
+		write(1, buffer, nbytes);
+		write(1, "\n", 1);
+	}
+	close(self->fd);
 	return (NULL);
 }
 
@@ -57,50 +66,18 @@ void new_client(cli_list **clients, int fd)
 	new->next = *clients;
 	*clients = new;
 }
-*/
+
 
 void *accept_routine(void *arg)
 {
 	(void)arg;
-	int maxfd;
 	int newfd;
-	int nready;
-	int nbytes;
-	int i;
-	fd_set fdset;
-	fd_set readset;
-	char buffer[1024];
+	cli_list *clients = NULL;
 
-	fcntl(sockfd, F_SETFD, O_NONBLOCK);
-	FD_ZERO(&fdset);
-	maxfd = sockfd;
-	FD_SET(sockfd, &fdset);
 	while (42)
 	{
-		FD_COPY(&fdset, &readset);
-		nready = select(maxfd + 1, &readset, NULL, NULL, NULL);
-		i = 0;
-		while (i <= maxfd && nready > 0)
-		{
-			if (!FD_ISSET(i, &readset))
-				continue ;
-			nready--;
-			if (i == sockfd)
-			{
-				printf("new client\n");
-				newfd = accept(sockfd, NULL, NULL);
-				fcntl(newfd, F_SETFD, O_NONBLOCK);
-				if (newfd > maxfd)
-					maxfd = newfd;
-				FD_SET(newfd, &fdset);
-			}
-			else
-			{
-				nbytes = recv(i, buffer, sizeof buffer, 0);
-				write(1, buffer, nbytes);
-			}
-			i++;
-		}
+		newfd = accept(sockfd, NULL, NULL);
+		new_client(&clients, newfd);
 	}
 }
 
